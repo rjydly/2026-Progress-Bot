@@ -1,0 +1,7 @@
+requests
+pillow
+numpy
+moviepy==1.0.3
+proglog
+imageio-ffmpeg
+imageio==2.25.1
