@@ -322,7 +322,7 @@ def generate_video():
     clip = ImageSequenceClip(frames, fps=FPS)
     if os.path.exists(AUDIO_PATH):
         try:
-            audio = AudioFileClip(AUDIO_PATH).subclip(0, min(VIDEO_DURATION, AudioFileClip(AUDIO_PATH).duration))
+            audio = AudioFileClip(AUDIO_PATH).subclip(0, min(ANIMATION_DURATION, AudioFileClip(AUDIO_PATH).duration))
             clip  = clip.set_audio(audio)
         except Exception as e:
             print(f"Audio error: {e}")
