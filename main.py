@@ -62,6 +62,37 @@ def send_telegram(message):
         except:
             pass
 
+def send_telegram_video(video_path, caption=""):
+    token   = os.getenv("TELEGRAM_BOT_TOKEN")
+    chat_id = os.getenv("TELEGRAM_CHAT_ID")
+    if token and chat_id:
+        try:
+            with open(video_path, 'rb') as video_file:
+                files = {'document': video_file}
+                data  = {'chat_id': chat_id}
+                if caption:
+                    data['caption'] = caption
+                response = requests.post(f"https://api.telegram.org/bot{token}/sendDocument",
+                              files=files, data=data, timeout=300)
+                if response.status_code == 200:
+                    print("✅ Vídeo enviat com a document (qualitat total sense compressió)")
+                else:
+                    print(f"❌ Error enviant vídeo: {response.status_code}")
+        except Exception as e:
+            print(f"❌ Error enviant vídeo per Telegram: {e}")
+
+def send_telegram_title(title):
+    token   = os.getenv("TELEGRAM_BOT_TOKEN")
+    chat_id = os.getenv("TELEGRAM_CHAT_ID")
+    if token and chat_id:
+        try:
+            message = f"📋 *Title for Instagram:*\n\n`{title}`"
+            requests.post(f"https://api.telegram.org/bot{token}/sendMessage",
+                          data={'chat_id': chat_id, 'text': message, 'parse_mode': 'Markdown'})
+            print("✅ Títol enviat per Telegram correctament")
+        except Exception as e:
+            print(f"❌ Error enviant títol per Telegram: {e}")
+
 def get_dropbox_access_token():
     app_key       = os.getenv("DROPBOX_APP_KEY")
     app_secret    = os.getenv("DROPBOX_APP_SECRET")
@@ -342,8 +373,28 @@ def generate_video():
 if __name__ == "__main__":
     try:
         temp_file, final_name, p, days = generate_video()
-        upload_to_dropbox(temp_file, final_name)
-        send_telegram(f"✅ 2026 at {p:.2f}% — {days} days left — mode {MODO_PARTICULAS} uploaded to Dropbox.")
+
+        # Missatge d'inici
+        send_telegram(f"🎬 Rendered: 2026 at {p:.2f}% — {days} days left — mode {MODO_PARTICULAS}")
+
+        # Enviar vídeo per Telegram
+        send_telegram_video(temp_file)
+
+        # Enviar títol copiable
+        send_telegram_title(final_name)
+
+        # Intent de pujar a Dropbox (fallback si Zapier no funciona)
+        try:
+            upload_to_dropbox(temp_file, final_name)
+            send_telegram("✅ Vídeo pujat a Dropbox correctament (backup)")
+        except Exception as dropbox_error:
+            send_telegram(f"⚠️ Dropbox fallback no ha funcionat: {str(dropbox_error)}\nPerò el vídeo ja l'has rebut per Telegram!")
+
+        # Netejar fitxer temporal
+        if os.path.exists(temp_file):
+            os.remove(temp_file)
+            print("✅ Fitxer temporal eliminat")
+
     except Exception as e:
         send_telegram(f"❌ ERROR: {str(e)}")
         print(e)
